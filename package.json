@@ -1,0 +1,37 @@
+{
+  "name": "my-monorepo-root",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "Client",
+    "Server"
+  ],
+  "scripts": {
+    "install-all": "npm install",
+    "dev:client": "npm run dev --workspace=Client --silent",
+    "dev:server": "npm run dev --workspace=Server --silent",
+    "dev": "npm run dev:orchestrate --silent",
+    "dev:orchestrate": "concurrently --kill-others --prefix \"[{name}]\" --names \"Client,Server\" --prefix-colors \"cyan,magenta\" \"npm run dev:client\" \"npm run dev:server\"",
+    "build": "npm run build --workspace=Client --silent",
+    "build:dev": "npm run build:dev --workspace=Client --silent"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/sql.js": "^1.4.11",
+    "concurrently": "^8.2.2"
+  },
+  "codespaces": {
+    "ports": {
+      "8081": {
+        "visibility": "public"
+      }
+    }
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "cheerio": "^1.2.0",
+    "puppeteer": "^25.8.0",
+    "sql": "^0.78.0",
+    "sql.js": "^1.14.2"
+  }
+}
