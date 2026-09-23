@@ -6,6 +6,7 @@ import { Quran_Subcategories } from "./Content/Quran/Constant";  // ← ADD THIS
 // Main categories
 export const Settings_Categories: Settings_Category_Config[] = [
   { id: "account", label: "Account", icon: User, Has_Subcategories: true },
+    { id: "Appearance", label: "Appearance", icon: User, Has_Subcategories: true },
   { id: "Quran",   label: "Quran",   icon: Type, Has_Subcategories: true },
   { id: "Hadith",  label: "Hadith",  icon: BookText, Has_Subcategories: true },
   { id: "Aid",     label: "Aid",     icon: Heart, Has_Subcategories: true },
@@ -21,6 +22,12 @@ export const Account_Subcategories: Account_Subcategory_Config[] = [
   { id: "Notes",     label: "Notes",     icon: <FileText className="h-4 w-4" /> },
   { id: "History",   label: "History",   icon: <Clock className="h-4 w-4" /> },
 ];
+
+export const Appearance_Subcategories: Account_Subcategory_Config[] = [
+  { id: "General",   label: "General",   icon: <User className="h-4 w-4" /> },
+  { id: "Button",   label: "Button",   icon: <Clock className="h-4 w-4" /> },
+];
+
 export const Hadith_Subcategories: Hadith_Subcategory_Configuration[] = [
   { id: "Arabic",   label: "Arabic",   icon: <User className="h-4 w-4" /> },
   { id: "Translation", label: "Translation", icon: <Bookmark className="h-4 w-4" /> },
@@ -39,6 +46,8 @@ export const Get_Subcategories = (Category: string) => {
       return Quran_Subcategories;
     case "Hadith":                     // ← ADD THIS CASE
       return Hadith_Subcategories;
+    case "Appearance":                     // ← ADD THIS CASE
+      return Appearance_Subcategories;
     default:
       return [];
   }

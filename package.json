@@ -18,6 +18,7 @@
   "devDependencies": {
     "@types/node": "^26.2.0",
     "@types/sql.js": "^1.4.11",
+    "@types/ws": "^8.18.1",
     "concurrently": "^8.2.2"
   },
   "codespaces": {
@@ -32,6 +33,7 @@
     "cheerio": "^1.2.0",
     "puppeteer": "^25.8.0",
     "sql": "^0.78.0",
-    "sql.js": "^1.14.2"
+    "sql.js": "^1.14.2",
+    "ws": "^8.21.3"
   }
 }

@@ -23,6 +23,6 @@ node_modules/
 # OS junk
 .DS_Store
 Thumbs.db
-
+supabase/migrations/
 # RAG corpus — built at deploy time, served from public/
 public/RAG/Corpus.json

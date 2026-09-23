@@ -4,7 +4,6 @@ import { Scroll_Area } from "@Web/Component/UI/Scroll-Area";
 import { Button } from "@Web/Component/UI/Button";
 import { Input } from "@Web/Component/UI/Input";
 import { Class_Names } from "@/Library/Utility";
-import { Container } from "@Web/Component/UI/Container";
 import { Search, X } from "lucide-react";
 import { Settings_Categories, Get_Subcategories } from "../Constants";
 import type { Settings_Category, Account_Subcategory, Aid_Subcategory } from "../Types";
@@ -220,7 +219,8 @@ export function Desktop({
         {/* Content area */}
         <Scroll_Area className="flex-1 h-full">
           <div className="pt-10">
-            <div className="p-6 max-w-2xl text-left">
+            {/* AANGEPAST: max-w-2xl is vervangen door w-full max-w-none */}
+            <div className="p-6 w-full max-w-none text-left">
               {children}
             </div>
           </div>

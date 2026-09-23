@@ -5,6 +5,9 @@ import File_System from "fs";
 import Zlib_Module from "zlib";
 import { pipeline as Pipeline_Stream } from "stream";
 import { fileURLToPath as File_URL_To_Path } from "url";
+import { createServer } from "http";
+import { WebSocketServer, WebSocket } from "ws";
+
 import {
   Fetch_Adiyah_Categories,
   Fetch_Adiyah_Category,
@@ -57,20 +60,21 @@ const Express_Application = Express();
 
 Express_Application.use(CORS());
 Express_Application.use(Express.json({ limit: "10mb" }));
+
+// ==========================================
+// 1. DOWNLOAD ROUTE
+// ==========================================
 Express_Application.get("/API/Download/*splat", (Request_Object: Request, Response_Object: Response) => {
   try {
-    // Modern path-to-regexp captures wildcard matches into named params
     const Raw_Path_String = Request_Object.params.splat || Request_Object.params[0] || "";
 
     if (!Raw_Path_String) {
       return Response_Object.status(400).json({ error: "Path parameter is required." });
     }
 
-    // Secure path resolution
     const Normalized_Path = Path_Module.Normalize_Slug_String(Raw_Path_String).replace(/^(\.\.[\/\\])+/, '');
     const Target_File_Path = Path_Module.join(Asset_Corpus_Directory_Path, Normalized_Path);
 
-    // Guarantee the file stays within the Corpus folder
     if (!Target_File_Path.startsWith(Asset_Corpus_Directory_Path)) {
       return Response_Object.status(403).json({ error: "Access denied." });
     }
@@ -106,6 +110,9 @@ Express_Application.get("/API/Download/*splat", (Request_Object: Request, Respon
   }
 });
 
+// ==========================================
+// 2. QURAN ROUTE
+// ==========================================
 Express_Application.get("/API/Quran", (Request_Object: Request, Response_Object: Response) => {
   try {
     const Query_Surah = Request_Object.query["Surah"];
@@ -213,6 +220,9 @@ Express_Application.get("/API/Quran", (Request_Object: Request, Response_Object:
   }
 });
 
+// ==========================================
+// 3. HADITH ROUTE
+// ==========================================
 Express_Application.get("/API/Hadith", (Request_Object: Request, Response_Object: Response) => {
   try {
     const Query_Collection_String = Request_Object.query["Collection"] as string | undefined;
@@ -331,6 +341,9 @@ Express_Application.get("/API/Hadith", (Request_Object: Request, Response_Object
   }
 });
 
+// ==========================================
+// 4. AID ROUTE
+// ==========================================
 Express_Application.get("/API/Aid", (Request_Object: Request, Response_Object: Response) => {
   try {
     const Query_Resource_String: string | undefined = (
@@ -414,6 +427,9 @@ Express_Application.get("/API/Aid", (Request_Object: Request, Response_Object: R
   }
 });
 
+// ==========================================
+// 5. RAG ROUTE
+// ==========================================
 Express_Application.get("/API/RAG", async (Request_Object: Request, Response_Object: Response) => {
   try {
     const Query_String = (Request_Object.query["Query"] || Request_Object.query["Search"] || Request_Object.query["q"]) as string | undefined;
@@ -433,8 +449,57 @@ Express_Application.get("/API/RAG", async (Request_Object: Request, Response_Obj
 
 Express_Application.use("/api", Render_Surah_Router);
 
+// ==========================================
+// 6. HTTP & WEBSOCKET PROXY SERVER (POORT 8081)
+// ==========================================
+const HTTP_Server = createServer(Express_Application);
+
+// Koppel de WebSocket server aan het pad "/API/STT"
+const WS_Server = new WebSocketServer({ server: HTTP_Server, path: "/API/STT" });
+
+WS_Server.on("connection", (Client_Socket: WebSocket) => {
+  console.log("🎙️ Client verbonden via WebSocket (Poort 8081)");
+
+  // Verbind intern met de Python ASR server (Poort 8082 op localhost)
+  const Python_ASR_Socket = new WebSocket("ws://127.0.0.1:8082");
+
+  Python_ASR_Socket.on("open", () => {
+    console.log("🔗 Verbinding met interne Python ASR (Poort 8082) tot stand gebracht");
+  });
+
+  // 1. Ontvang audio van client op 8081 -> Stuur door naar Python op 8082
+  Client_Socket.on("message", (Data_Buffer: Buffer) => {
+    if (Python_ASR_Socket.readyState === WebSocket.OPEN) {
+      Python_ASR_Socket.send(Data_Buffer);
+    }
+  });
+
+  // 2. Ontvang transcriptie van Python op 8082 -> Stuur terug naar client op 8081
+  Python_ASR_Socket.on("message", (Response_Data: Buffer) => {
+    if (Client_Socket.readyState === WebSocket.OPEN) {
+      Client_Socket.send(Response_Data.toString());
+    }
+  });
+
+  // 3. Foutafhandeling en sluiten van verbindingen
+  Client_Socket.on("close", () => {
+    console.log("🔌 Client verbinding gesloten");
+    if (Python_ASR_Socket.readyState === WebSocket.OPEN) {
+      Python_ASR_Socket.close();
+    }
+  });
+
+  Python_ASR_Socket.on("error", (Error_Context) => {
+    console.error("❌ Fout in interne Python ASR verbinding:", Error_Context);
+    if (Client_Socket.readyState === WebSocket.OPEN) {
+      Client_Socket.close();
+    }
+  });
+});
+
 const Server_Port_Number = process.env.PORT ? Number(process.env.PORT) : 8081;
 
-Express_Application.listen(Server_Port_Number, () => {
+HTTP_Server.listen(Server_Port_Number, () => {
   console.log(`  ➜  Server running at: http://localhost:${Server_Port_Number}/`);
+  console.log(`  ➜  STT WebSocket available at: ws://localhost:${Server_Port_Number}/API/STT`);
 });

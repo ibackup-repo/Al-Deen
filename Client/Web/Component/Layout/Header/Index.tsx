@@ -1,4 +1,4 @@
-// @/Component/Header.tsx
+// @Web/Component/Header.tsx
 import { memo, useCallback, useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Settings, ArrowLeft, Search, Home, X, Heart, LogIn } from "lucide-react";

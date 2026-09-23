@@ -6,14 +6,17 @@ import { Use_Audio_Level } from './Use-Audio-Level';
 function Get_Proxy_URL(): string {
   const envUrl = (import.meta.env.VITE_STT_URL as string | undefined)?.trim()
     || (import.meta.env.VITE_STT_PROXY_URL as string | undefined)?.trim();
-  if (envUrl) return envUrl;
+  if (envUrl) {
+    // Zorg dat ook een aangepaste env URL op /API/STT eindigt als dat er nog niet staat
+    return envUrl.endsWith('/API/STT') ? envUrl : `${envUrl.replace(/\/$/, '')}/API/STT`;
+  }
   const host = window.location.hostname;
   if (host.endsWith('.app.github.dev')) {
     // Codespaces: unified STT server is exposed on port 8081.
     const withPort = host.replace(/-\d+(\.app\.github\.dev)$/, '-8081$1');
-    return `wss://${withPort}`;
+    return `wss://${withPort}/API/STT`;
   }
-  return 'ws://localhost:8081';
+  return 'ws://localhost:8081/API/STT';
 }
 
 // Exponential backoff (ms): 1s, 2s, 4s, 8s, 15s cap.
@@ -224,8 +227,6 @@ export function Use_Deepgram({
     }
   }, [Ayaat, All_Kalimaat, Surah_ID, Hifz, On_Ayah_Complete]);
 
-
-
   // ---------- WebSocket and recording ----------
   const Cleanup = useCallback(() => {
     if (Reconnect_Timeout_Reference.current) {
@@ -277,10 +278,11 @@ export function Use_Deepgram({
         Should_Reconnect_Reference.current = true;
         resolve();
       };
-      ws.onerror = () => {
+      ws.onerror = (ev) => {
+        console.error('WebSocket error event:', ev);
         Set_Connection_Status('failed');
-          Set_Error('WebSocket error — is the STT server running on port 8081?');
-        reject(new error('WebSocket connection failed'));
+        Set_Error('WebSocket error — is the STT server running on port 8081?');
+        reject(new Error('WebSocket connection failed'));
       };
       ws.onclose = (event) => {
         console.log('WebSocket closed:', event.code, event.reason);
@@ -338,6 +340,38 @@ export function Use_Deepgram({
     return false;
   }, []);
 
+  const Stop_Recording = useCallback(() => {
+    Should_Reconnect_Reference.current = false;
+    if (Reconnect_Timeout_Reference.current) {
+      clearTimeout(Reconnect_Timeout_Reference.current);
+      Reconnect_Timeout_Reference.current = null;
+    }
+    if (Silence_Timer_Reference.current) {
+      clearInterval(Silence_Timer_Reference.current);
+      Silence_Timer_Reference.current = null;
+    }
+    if (Recorder_Reference.current && Recorder_Reference.current.state !== 'inactive') {
+      Recorder_Reference.current.stop();
+    }
+    if (Web_Socket_Reference.current && Web_Socket_Reference.current.readyState === WebSocket.OPEN) {
+      Web_Socket_Reference.current.close(1000, 'User stopped recording');
+    }
+    if (Stream_Reference.current) {
+      Stream_Reference.current.getTracks().forEach(track => track.stop());
+    }
+    audioLevel.Detach();
+    Set_Is_Recording(false);
+    Set_Is_Paused(false);
+    Paused_Reference.current = false;
+    Set_Interim_Transcript('');
+    Set_Connection_Status('idle');
+    Set_Reconnect_Attempt(0);
+    Reconnect_Attempt_Reference.current = 0;
+    Web_Socket_Reference.current = null;
+    Recorder_Reference.current = null;
+    Stream_Reference.current = null;
+  }, [audioLevel]);
+
   const Start_Recording = useCallback(async () => {
     Set_Error(null);
     Set_Transcript('');
@@ -370,7 +404,6 @@ export function Use_Deepgram({
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       Recorder_Reference.current = recorder;
 
-
       recorder.ondataavailable = (e) => {
         if (Paused_Reference.current) return;
         if (e.data.size > 0 && Web_Socket_Reference.current?.readyState === WebSocket.OPEN) {
@@ -391,42 +424,10 @@ export function Use_Deepgram({
       }, 1000);
     } catch (err) {
       Set_Connection_Status('failed');
-      Set_Error(err instanceof error ? err.message : 'Failed to access microphone');
+      Set_Error(err instanceof Error ? err.message : 'Failed to access microphone');
       Cleanup();
     }
-  }, [Connect_Web_Socket, Cleanup]);
-
-  const Stop_Recording = useCallback(() => {
-    Should_Reconnect_Reference.current = false;
-    if (Reconnect_Timeout_Reference.current) {
-      clearTimeout(Reconnect_Timeout_Reference.current);
-      Reconnect_Timeout_Reference.current = null;
-    }
-    if (Silence_Timer_Reference.current) {
-      clearInterval(Silence_Timer_Reference.current);
-      Silence_Timer_Reference.current = null;
-    }
-    if (Recorder_Reference.current && Recorder_Reference.current.state !== 'inactive') {
-      Recorder_Reference.current.stop();
-    }
-    if (Web_Socket_Reference.current && Web_Socket_Reference.current.readyState === WebSocket.OPEN) {
-      Web_Socket_Reference.current.close(1000, 'User stopped recording');
-    }
-    if (Stream_Reference.current) {
-      Stream_Reference.current.getTracks().forEach(track => track.stop());
-    }
-    audioLevel.Detach();
-    Set_Is_Recording(false);
-    Set_Is_Paused(false);
-    Paused_Reference.current = false;
-    Set_Interim_Transcript('');
-    Set_Connection_Status('idle');
-    Set_Reconnect_Attempt(0);
-    Reconnect_Attempt_Reference.current = 0;
-    Web_Socket_Reference.current = null;
-    Recorder_Reference.current = null;
-    Stream_Reference.current = null;
-  }, [audioLevel]);
+  }, [Connect_Web_Socket, Cleanup, Stop_Recording, Silence_Auto_Stop_Timeout, audioLevel]);
 
   const Pause_Recording = useCallback(() => {
     if (!Is_Recording || Paused_Reference.current) return;
