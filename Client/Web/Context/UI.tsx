@@ -19,6 +19,7 @@ export interface UI_Context_Type {
     Key: K,
     Value: Button_Configuration_Map[Theme_Mode][Button_Variant][S][K]
   ) => void;
+  Set_Button_Full_Configuration: (New_Config: Button_Configuration_Map) => void;
   Reset_To_Defaults: () => void;
 }
 
@@ -26,7 +27,9 @@ const LOCAL_STORAGE_KEY = "ui_button_customization";
 
 const UI_Context = createContext<UI_Context_Type | undefined>(undefined);
 
-export const UI_Provider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const UI: React.FC<{ children: React.ReactNode }> & {
+  Provider: React.FC<{ children: React.ReactNode }>;
+} = ({ children }) => {
   const [Button_Customization, Set_Button_Customization] = useState<Button_Configuration_Map>(
     Default_Button_Configuration
   );
@@ -80,6 +83,15 @@ export const UI_Provider: React.FC<{ children: React.ReactNode }> = ({ children 
     []
   );
 
+  const Set_Button_Full_Configuration = useCallback((New_Config: Button_Configuration_Map) => {
+    Set_Button_Customization(New_Config);
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(New_Config));
+    } catch (Error) {
+      console.error("Fout bij opslaan van volledige preset in LocalStorage:", Error);
+    }
+  }, []);
+
   const Reset_To_Defaults = useCallback(() => {
     Set_Button_Customization(JSON.parse(JSON.stringify(Default_Button_Configuration)));
     try {
@@ -93,18 +105,24 @@ export const UI_Provider: React.FC<{ children: React.ReactNode }> = ({ children 
     () => ({
       Button_Customization,
       Update_Button_Single_Property,
+      Set_Button_Full_Configuration,
       Reset_To_Defaults,
     }),
-    [Button_Customization, Update_Button_Single_Property, Reset_To_Defaults]
+    [Button_Customization, Update_Button_Single_Property, Set_Button_Full_Configuration, Reset_To_Defaults]
   );
 
   return <UI_Context.Provider value={contextValue}>{children}</UI_Context.Provider>;
 };
 
+// Zorgt ervoor dat je zowel <UI> als <UI.Provider> kunt gebruiken als je dat wilt
+UI.Provider = UI;
+
 export const Use_UI = (): UI_Context_Type => {
   const Context = useContext(UI_Context);
   if (!Context) {
-    throw new Error("Use_UI moet binnen een UI_Provider worden gebruikt");
+    throw new Error("Use_UI moet binnen een UI component worden gebruikt");
   }
   return Context;
 };
+
+export default UI;

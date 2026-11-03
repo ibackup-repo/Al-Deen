@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { Use_App } from "@Web/Context/App";
-import { Use_UI, UI_Provider, UI_Context_Type } from "@Web/Context/UI";
+import { Use_UI, UI } from "@Web/Context/UI";
 import {
   Button_Variant,
   Button_State,
@@ -11,6 +11,8 @@ import {
   Gooey_Active_Configuration,
 } from "@Web/Component/UI/Button/Types";
 import { Default_Button_Configuration } from "@Web/Component/UI/Button/Preset/Default";
+import { Glassmorphism_Button_Configuration } from "@Web/Component/UI/Button/Preset/Glassmorphism";
+import { Flat_Button_Configuration } from "@Web/Component/UI/Button/Preset/Flat";
 import { Gooey_Configuration } from "@Web/Component/UI/Button/Fluid";
 import { Button as CustomButton } from "@Web/Component/UI/Button/Index";
 import { Accordion_Item } from "@Web/Component/UI/Accordion/Index";
@@ -86,6 +88,7 @@ function Button_Appearance_Content() {
   const {
     Button_Customization = Default_Button_Configuration,
     Update_Button_Single_Property,
+    Set_Button_Full_Configuration, // Aanname: deze functie bestaat of past de volledige config aan in je UI context
     Reset_To_Defaults,
   } = Use_UI();
 
@@ -108,7 +111,6 @@ function Button_Appearance_Content() {
       Key: K,
       Value: Button_Configuration_Map[Theme_Mode][Button_Variant][S][K]
     ) => {
-      // Zodra er een instelling wordt gewijzigd, vervalt het actieve preset
       Set_Selected_Preset(null);
 
       if (Update_Button_Single_Property) {
@@ -120,15 +122,21 @@ function Button_Appearance_Content() {
 
   const Handle_Select_Preset = useCallback(
     (Preset: Preset_Option) => {
+      Set_Selected_Preset(Preset);
+
       if (Preset === "Default") {
         Reset_To_Defaults();
-        Set_Selected_Preset("Default");
-      } else {
-        // Placeholder voor toekomstige presets
-        console.log(`Preset ${Preset} gekozen - nog niet functioneel.`);
+      } else if (Preset === "Glassmorphism") {
+        if (Set_Button_Full_Configuration) {
+          Set_Button_Full_Configuration(Glassmorphism_Button_Configuration);
+        }
+      } else if (Preset === "Flat") {
+        if (Set_Button_Full_Configuration) {
+          Set_Button_Full_Configuration(Flat_Button_Configuration);
+        }
       }
     },
-    [Reset_To_Defaults]
+    [Reset_To_Defaults, Set_Button_Full_Configuration]
   );
 
   const Handle_Reset = useCallback(() => {
@@ -173,10 +181,10 @@ function Button_Appearance_Content() {
 
             <button
               onClick={() => Handle_Select_Preset("Glassmorphism")}
-              className={`p-2.5 text-xs font-medium rounded-lg border text-center transition-all cursor-pointer opacity-60 hover:opacity-100 ${
+              className={`p-2.5 text-xs font-medium rounded-lg border text-center transition-all cursor-pointer ${
                 Selected_Preset === "Glassmorphism"
                   ? "bg-foreground text-background border-foreground shadow-sm font-semibold"
-                  : "bg-muted/30 border-border hover:bg-muted text-foreground"
+                  : "bg-muted/30 border-border hover:bg-muted text-foreground opacity-60 hover:opacity-100"
               }`}
             >
               Glassmorphism
@@ -184,10 +192,10 @@ function Button_Appearance_Content() {
 
             <button
               onClick={() => Handle_Select_Preset("Flat")}
-              className={`p-2.5 text-xs font-medium rounded-lg border text-center transition-all cursor-pointer opacity-60 hover:opacity-100 ${
+              className={`p-2.5 text-xs font-medium rounded-lg border text-center transition-all cursor-pointer ${
                 Selected_Preset === "Flat"
                   ? "bg-foreground text-background border-foreground shadow-sm font-semibold"
-                  : "bg-muted/30 border-border hover:bg-muted text-foreground"
+                  : "bg-muted/30 border-border hover:bg-muted text-foreground opacity-60 hover:opacity-100"
               }`}
             >
               Flat
@@ -288,6 +296,84 @@ function Button_Appearance_Content() {
                         />
                       </div>
                     )}
+
+                    {/* Schaduw */}
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium">Has Shadow</label>
+                      <input
+                        type="checkbox"
+                        checked={Config.Has_Shadow ?? false}
+                        onChange={(E) =>
+                          Handle_Update(Variant, State, "Has_Shadow", E.target.checked)
+                        }
+                        className="h-4 w-4 rounded accent-foreground cursor-pointer"
+                      />
+                    </div>
+
+                    {Config.Has_Shadow && (
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm font-medium">Shadow Value</label>
+                        <input
+                          type="text"
+                          value={Config.Shadow || ""}
+                          onChange={(E) =>
+                            Handle_Update(Variant, State, "Shadow", E.target.value)
+                          }
+                          placeholder="e.g., 0px 4px 12px rgba(0,0,0,0.1)"
+                          className="w-full p-1.5 border border-border rounded bg-transparent text-xs"
+                        />
+                      </div>
+                    )}
+
+                    {/* Transparency */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-sm font-medium">
+                        <span>Transparency (Opacity)</span>
+                        <span>{Config.Transparency ?? 1}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={Config.Transparency ?? 1}
+                        onChange={(E) =>
+                          Handle_Update(Variant, State, "Transparency", Number(E.target.value))
+                        }
+                        className="w-full accent-foreground"
+                      />
+                    </div>
+
+                    {/* Cursor */}
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium">Cursor</label>
+                      <select
+                        value={Config.Cursor || "pointer"}
+                        onChange={(E) =>
+                          Handle_Update(Variant, State, "Cursor", E.target.value as any)
+                        }
+                        className="p-1 border border-border rounded bg-transparent text-xs cursor-pointer"
+                      >
+                        <option value="pointer" className="bg-background">pointer</option>
+                        <option value="default" className="bg-background">default</option>
+                        <option value="not-allowed" className="bg-background">not-allowed</option>
+                        <option value="wait" className="bg-background">wait</option>
+                      </select>
+                    </div>
+
+                    {/* Transform */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm font-medium">Transform</label>
+                      <input
+                        type="text"
+                        value={Config.Transform || "scale(1)"}
+                        onChange={(E) =>
+                          Handle_Update(Variant, State, "Transform", E.target.value)
+                        }
+                        placeholder="e.g., scale(1) rotate(0deg)"
+                        className="w-full p-1.5 border border-border rounded bg-transparent text-xs"
+                      />
+                    </div>
                   </div>
 
                   <Accordion_Item
@@ -482,9 +568,9 @@ function Button_Appearance_Content() {
 
 export function Button_Appearance() {
   return (
-    <UI_Provider>
+    <UI>
       <Button_Appearance_Content />
-    </UI_Provider>
+    </UI>
   );
 }
 

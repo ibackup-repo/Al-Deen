@@ -1,6 +1,6 @@
 import { Layout } from "@Web/Component/Layout/Index";
 import { Button } from "@Web/Component/UI/Button/Index";
-import { UI_Provider } from "@Web/Context/UI";
+import { UI } from "@Web/Context/UI";
 import { Use_Translation } from "@/Hook/Use-Translation";
 import { useNavigate } from "react-router-dom";
 
@@ -9,10 +9,10 @@ const Index = () => {
   const Navigate = useNavigate();
 
   return (
-    <UI_Provider>
+    <UI>
       <Layout>
         <div 
-          className="grid grid-cols-2 md:grid-cols-5 gap-3 w-full" 
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 w-full" 
           dir={Is_RTL ? "rtl" : "ltr"}
         >
           <div className="flex-1">
@@ -27,7 +27,15 @@ const Index = () => {
             <Button
               Label={t.nav.Hadith}
               On_Click={() => Navigate("/Hadith")}
-          Height={64} 
+              Height={64} 
+            />
+          </div>
+
+          <div className="flex-1">
+            <Button
+              Label={t.nav?.ilm || "Ilm"}
+              On_Click={() => Navigate("/Ilm")}
+              Height={64} 
             />
           </div>
 
@@ -35,7 +43,7 @@ const Index = () => {
             <Button
               Label={t.nav?.ummah || "Ummah"}
               On_Click={() => Navigate("/Ummah")}
-          Height={64} 
+              Height={64} 
             />
           </div>
 
@@ -43,20 +51,20 @@ const Index = () => {
             <Button
               Label="AI (Beta)"
               On_Click={() => Navigate("/AI")}
-          Height={64} 
+              Height={64} 
             />
           </div>
 
-          <div className="flex-1 col-span-2 md:col-span-1">
+          <div className="flex-1">
             <Button
               Label={t.nav?.Aid || "Aid"}
               On_Click={() => Navigate("/Aid")}
-          Height={64} 
+              Height={64} 
             />
           </div>
         </div>
       </Layout>
-    </UI_Provider>
+    </UI>
   );
 };
 

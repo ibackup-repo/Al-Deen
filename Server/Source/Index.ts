@@ -7,6 +7,7 @@ import { pipeline as Pipeline_Stream } from "stream";
 import { fileURLToPath as File_URL_To_Path } from "url";
 import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
+import OS from "os";
 
 import {
   Fetch_Adiyah_Categories,
@@ -46,6 +47,22 @@ import {
   Get_Available_KBK_Transliterations as Get_Hadith_Word_By_Word_Transliterations,
 } from "./API/Hadith.js";
 
+import {
+  Supported_Language,
+  Get_Vocabulary,
+  Get_Vocabulary_By_Slug,
+  Get_Grammar,
+  Get_Grammar_By_Slug,
+  Get_Lessons,
+  Get_Lesson_By_Slug,
+} from "./API/Language.js";
+
+import {
+  Get_Chess_Levels,
+  Get_All_Puzzles,
+  Get_Puzzle_By_FEN,
+} from "./API/Chess.js";
+
 const File_Name: string = File_URL_To_Path(import.meta.url);
 const Directory_Name: string = Path_Module.dirname(File_Name);
 
@@ -58,8 +75,20 @@ const Asset_Corpus_Directory_Path: string = Path_Module.resolve(
 
 const Express_Application = Express();
 
-Express_Application.use(CORS());
+Express_Application.use(
+  CORS({
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  })
+);
 Express_Application.use(Express.json({ limit: "10mb" }));
+
+// Expose static assets
+Express_Application.use(
+  "/assets/Corpus",
+  Express.static(Path_Module.join(Directory_Name, "../Asset/Corpus"))
+);
 
 // ==========================================
 // 1. DOWNLOAD ROUTE
@@ -90,7 +119,7 @@ Express_Application.get("/API/Download/*splat", (Request_Object: Request, Respon
     Response_Object.setHeader("Content-Encoding", "gzip");
 
     const File_Read_Stream = File_System.createReadStream(Target_File_Path);
-    const Gzip_Compression_Stream = Zlib_Module.createGzip({ Level: 6 });
+    const Gzip_Compression_Stream = Zlib_Module.createGzip({ level: 6 });
 
     Pipeline_Stream(File_Read_Stream, Gzip_Compression_Stream, Response_Object, (Error_Context) => {
       if (Error_Context) {
@@ -363,7 +392,7 @@ Express_Application.get("/API/Aid", (Request_Object: Request, Response_Object: R
       Request_Object.query["WBW"] === "true";
 
     switch (Query_Resource_String) {
-      case "Dua": {
+      case "dua": {
         if (Query_Category_Identifier_Number) {
           const Category_Data_Payload = Fetch_Adiyah_Category(
             Query_Category_Identifier_Number,
@@ -447,41 +476,148 @@ Express_Application.get("/API/RAG", async (Request_Object: Request, Response_Obj
   }
 });
 
+// ==========================================
+// 6. LANGUAGE ROUTE
+// ==========================================
+Express_Application.get("/api/language-Corpus", (Req: Request, Res: Response): void => {
+  const Language = Req.query.lang as string;
+  if (!Language) {
+    Res.status(400).json({ error: "Missing required query parameter: 'lang'." });
+    return;
+  }
+
+  const Code_To_Name_Map: Record<string, Supported_Language> = {
+    nl: "Dutch",
+    en: "English",
+    ar: "Arabic",
+    ps: "Pashto",
+  };
+
+  const Full_Language_Name: Supported_Language =
+    Code_To_Name_Map[Language] || (Language as Supported_Language);
+
+  const Type = Req.query.type as string;
+  const Category = Req.query.category as string;
+  const Subcategory = Req.query.subcategory as string;
+  const Level = Req.query.level as string;
+  const Slug = Req.query.slug as string;
+
+  try {
+    if (Slug) {
+      if (Type === 'vocabulary') {
+        const item = Get_Vocabulary_By_Slug(Full_Language_Name, Slug);
+        if (!item) { Res.status(404).json({ error: `Vocabulary item '${Slug}' not found.` }); return; }
+        Res.json(item);
+        return;
+      }
+      if (Type === 'grammar') {
+        const item = Get_Grammar_By_Slug(Full_Language_Name, Slug);
+        if (!item) { Res.status(404).json({ error: `Grammar rule '${Slug}' not found.` }); return; }
+        Res.json(item);
+        return;
+      }
+      if (Type === 'lessons') {
+        const item = Get_Lesson_By_Slug(Full_Language_Name, Slug);
+        if (!item) { Res.status(404).json({ error: `Lesson '${Slug}' not found.` }); return; }
+        Res.json(item);
+        return;
+      }
+    }
+
+    if (Type === 'vocabulary') {
+      Res.json({ vocabulary: Get_Vocabulary(Full_Language_Name, Category, Subcategory) });
+      return;
+    }
+
+    if (Type === 'grammar') {
+      Res.json({ grammar: Get_Grammar(Full_Language_Name, Category, Subcategory) });
+      return;
+    }
+
+    if (Type === 'lessons') {
+      Res.json({ lessons: Get_Lessons(Full_Language_Name, Level) });
+      return;
+    }
+
+    Res.json({
+      vocabulary: Get_Vocabulary(Full_Language_Name),
+      grammar: Get_Grammar(Full_Language_Name),
+      lessons: Get_Lessons(Full_Language_Name),
+    });
+  } catch (Error: any) {
+    console.error("[API Error] Failed serving /api/language-Corpus:", Error);
+    Res.status(500).json({ error: Error.message || "Failed to query language database." });
+  }
+});
+
+// ==========================================
+// 7. CHESS ROUTE
+// ==========================================
+Express_Application.get("/api/chess", (Req: Request, Res: Response): void => {
+  const FEN = Req.query.fen as string;
+  const Puzzles_Only = Req.query.puzzles === 'true';
+  const Levels_Only = Req.query.levels === 'true';
+
+  try {
+    if (FEN) {
+      const Puzzle = Get_Puzzle_By_FEN(FEN);
+      if (!Puzzle) {
+        Res.status(404).json({ error: `Puzzle with FEN '${FEN}' not found.` });
+        return;
+      }
+      Res.json(Puzzle);
+      return;
+    }
+
+    if (Puzzles_Only) {
+      Res.json({ puzzles: Get_All_Puzzles() });
+      return;
+    }
+
+    if (Levels_Only) {
+      Res.json({ levels: Get_Chess_Levels() });
+      return;
+    }
+
+    const Levels = Get_Chess_Levels();
+    const Puzzles = Get_All_Puzzles();
+    Res.json({ levels: Levels, puzzles: Puzzles });
+  } catch (Error: any) {
+    console.error("[API Error] Failed serving /api/chess:", Error);
+    Res.status(500).json({ error: Error.message || "Failed to query chess data." });
+  }
+});
+
 Express_Application.use("/api", Render_Surah_Router);
 
 // ==========================================
-// 6. HTTP & WEBSOCKET PROXY SERVER (POORT 8081)
+// 8. HTTP & WEBSOCKET PROXY SERVER
 // ==========================================
 const HTTP_Server = createServer(Express_Application);
 
-// Koppel de WebSocket server aan het pad "/API/STT"
 const WS_Server = new WebSocketServer({ server: HTTP_Server, path: "/API/STT" });
 
 WS_Server.on("connection", (Client_Socket: WebSocket) => {
-  console.log("🎙️ Client verbonden via WebSocket (Poort 8081)");
+  console.log("🎙️ Client verbonden via WebSocket");
 
-  // Verbind intern met de Python ASR server (Poort 8082 op localhost)
   const Python_ASR_Socket = new WebSocket("ws://127.0.0.1:8082");
 
   Python_ASR_Socket.on("open", () => {
     console.log("🔗 Verbinding met interne Python ASR (Poort 8082) tot stand gebracht");
   });
 
-  // 1. Ontvang audio van client op 8081 -> Stuur door naar Python op 8082
   Client_Socket.on("message", (Data_Buffer: Buffer) => {
     if (Python_ASR_Socket.readyState === WebSocket.OPEN) {
       Python_ASR_Socket.send(Data_Buffer);
     }
   });
 
-  // 2. Ontvang transcriptie van Python op 8082 -> Stuur terug naar client op 8081
   Python_ASR_Socket.on("message", (Response_Data: Buffer) => {
     if (Client_Socket.readyState === WebSocket.OPEN) {
       Client_Socket.send(Response_Data.toString());
     }
   });
 
-  // 3. Foutafhandeling en sluiten van verbindingen
   Client_Socket.on("close", () => {
     console.log("🔌 Client verbinding gesloten");
     if (Python_ASR_Socket.readyState === WebSocket.OPEN) {
@@ -497,9 +633,28 @@ WS_Server.on("connection", (Client_Socket: WebSocket) => {
   });
 });
 
+function Get_Network_IP(): string {
+  const Interfaces = OS.networkInterfaces();
+  for (const Name of Object.keys(Interfaces)) {
+    for (const Interface of Interfaces[Name] || []) {
+      if (Interface.family === 'IPv4' && !Interface.internal) {
+        return Interface.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
+
 const Server_Port_Number = process.env.PORT ? Number(process.env.PORT) : 8081;
 
 HTTP_Server.listen(Server_Port_Number, () => {
-  console.log(`  ➜  Server running at: http://localhost:${Server_Port_Number}/`);
+  const Network_IP = Get_Network_IP();
+  const Cyan = '\x1b[36m';
+  const Bold = '\x1b[1m';
+  const Dim = '\x1b[2m';
+  const Reset = '\x1b[0m';
+
+  console.log(`\n  ${Cyan}➜${Reset}  ${Bold}Local:${Reset}    ${Cyan}http://localhost:${Server_Port_Number}/${Reset}`);
+  console.log(`  ${Cyan}➜${Reset}  ${Bold}Network:${Reset} ${Dim}http://${Network_IP}:${Server_Port_Number}/${Reset}\n`);
   console.log(`  ➜  STT WebSocket available at: ws://localhost:${Server_Port_Number}/API/STT`);
 });

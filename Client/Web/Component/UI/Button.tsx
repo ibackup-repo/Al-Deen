@@ -93,4 +93,4 @@ export const Button = forwardRef<HTMLButtonElement | HTMLDivElement, ButtonProps
   }
 );
 
-Button.Display_Name = "Button";
+Button.displayName = "Button";

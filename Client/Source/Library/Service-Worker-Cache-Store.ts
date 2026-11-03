@@ -3,6 +3,7 @@
 const QURAN_CACHE_NAME = "Quran-Data-Cache-V2";
 const HADITH_CACHE_NAME = "Hadith-Data-Cache-V1";
 const AID_CACHE_NAME = "Aid-Data-Cache-V1";
+const CORPUS_CACHE_NAME = "Alearn_Corpus_Cache_v1";
 
 const Build_Cache_URL = (Namespace: string, Key: string | number): string =>
   `https://app-cache.local/${Namespace}/${encodeURIComponent(String(Key))}`;
@@ -14,7 +15,7 @@ const Read_Cached_JSON = async <T>(
   Key: string | number
 ): Promise<T | null> => {
   try {
-    const Cache_Instance = await caches.Open(Cache_Name);
+    const Cache_Instance = await caches.open(Cache_Name);
     const Matched_Response = await Cache_Instance.match(Build_Cache_URL(Namespace, Key));
     if (!Matched_Response) return null;
     return (await Matched_Response.json()) as T;
@@ -30,7 +31,7 @@ const Write_Cached_JSON = async (
   Data: unknown
 ): Promise<void> => {
   try {
-    const Cache_Instance = await caches.Open(Cache_Name);
+    const Cache_Instance = await caches.open(Cache_Name);
     const Response_To_Store = new Response(JSON.stringify(Data), {
       headers: { "Content-Type": "application/json" },
     });
@@ -46,7 +47,7 @@ const Delete_Cached_Entry = async (
   Key: string | number
 ): Promise<void> => {
   try {
-    const Cache_Instance = await caches.Open(Cache_Name);
+    const Cache_Instance = await caches.open(Cache_Name);
     await Cache_Instance.delete(Build_Cache_URL(Namespace, Key));
   } catch {
     // Best-effort
@@ -194,3 +195,48 @@ export const Clear_Aid_Cache = (): Promise<boolean> => caches.delete(AID_CACHE_N
 
 export const Build_Aid_Dua_Category_Key = (Category_ID: number, Include_WBW: boolean): string =>
   `Category::${Category_ID}::wbw=${Include_WBW}`;
+
+// ==========================================
+// --- CORPUS / ALEARN CACHE HELPERS ---
+// ==========================================
+
+export async function Cache_Asset(Url: string): Promise<void> {
+  if (typeof window === "undefined" || !('caches' in window)) return;
+  try {
+    const Cache_Storage = await caches.open(CORPUS_CACHE_NAME);
+    await Cache_Storage.add(Url);
+  } catch (Error: any) {
+    console.error(`[Cache Error] Failed to cache ${Url}:`, Error);
+  }
+}
+
+export async function Get_Cached_Response(Url: string): Promise<Response | null> {
+  if (typeof window === "undefined" || !('caches' in window)) return null;
+  try {
+    const Cache_Storage = await caches.open(CORPUS_CACHE_NAME);
+    const Response_Match = await Cache_Storage.match(Url);
+    return Response_Match || null;
+  } catch (Error: any) {
+    console.error(`[Cache Error] Match failed for ${Url}:`, Error);
+    return null;
+  }
+}
+
+export async function Fetch_With_Cache_Fallback<T = any>(Url: string): Promise<T> {
+  const Cached = await Get_Cached_Response(Url);
+  if (Cached) {
+    return await Cached.json();
+  }
+
+  const Network_Response = await fetch(Url);
+  if (Network_Response.ok && typeof window !== "undefined" && 'caches' in window) {
+    const Cache_Storage = await caches.open(CORPUS_CACHE_NAME);
+    Cache_Storage.put(Url, Network_Response.clone());
+  }
+  return await Network_Response.json();
+}
+
+export async function Clear_Corpus_Cache(): Promise<boolean> {
+  if (typeof window === "undefined" || !('caches' in window)) return false;
+  return await caches.delete(CORPUS_CACHE_NAME);
+}

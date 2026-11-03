@@ -1,6 +1,7 @@
 export type Theme_Mode = "Light" | "Dark";
 export type Button_Variant = "Primary" | "Secondary";
 export type Button_State = "Default" | "Hover" | "Active";
+export type Button_Preset_Name = "Default" | "Glassmorphism" | "Flat";
 
 export interface Spacing_Configuration {
   Top: number;
@@ -62,6 +63,14 @@ interface Button_Fields {
   Border_Radius: number;
   Has_Border: boolean;
   Border_Color: string;
+  Has_Shadow: boolean;
+  Shadow: string;
+  
+  // Nieuwe eigenschappen toegevoegd
+  Transparency: number; // Bijv. 0 tot 1 (opacity)
+  Cursor: string;       // Bijv. "pointer", "default", "not-allowed"
+  Transform: string;    // Bijv. "scale(1)", "rotate(0deg)"
+
   Padding: Spacing_Configuration;
   Margin: Spacing_Configuration;
 }
