@@ -5,6 +5,11 @@ import { Class_Names } from "@/Library/Utility";
 import { Use_UI } from "@Web/Context/UI";
 import { Use_App } from "@Web/Context/App";
 import {
+  Use_Page_Transition_Optional,
+  Use_Transition_Navigate,
+  Page_Transition_Settings,
+} from "../Page_Transition/Index";
+import {
   Button_Variant,
   Button_State,
   Theme_Mode,
@@ -16,9 +21,19 @@ export interface Button_Properties {
   Label?: string | React.ReactNode;
   Icon?: React.ReactNode;
   On_Click?: (Event?: React.MouseEvent<HTMLDivElement>) => void;
+
+  // Navigatie met paginatransitie. Beide namen werken.
+  Navigate_To?: string;
+  Path?: string;
+  Transition_Border_Radius?: number;
+
   Height?: number;
   Width?: number;
   Variant?: Button_Variant;
+
+  // Overschrijft het thema voor alleen deze knop.
+  Theme?: Theme_Mode;
+
   Color?: string;
   Text_Color?: string;
   Size?: "default" | "icon" | "sm" | "lg";
@@ -43,9 +58,13 @@ export const Button: React.FC<Button_Properties> = ({
   Label,
   Icon,
   On_Click,
+  Navigate_To,
+  Path,
+  Transition_Border_Radius,
   Height = 48,
   Width,
   Variant = "Primary",
+  Theme,
   Color,
   Text_Color,
   Size = "default",
@@ -65,6 +84,15 @@ export const Button: React.FC<Button_Properties> = ({
 
   const Filter_Identifier = useId().replace(/:/g, "");
 
+  /* -------------------------------------------------------------- */
+  /* Navigatie en paginatransitie                                   */
+  /* -------------------------------------------------------------- */
+
+  // Buiten de provider is dit undefined en navigeert de knop zonder animatie.
+  const Transition = Use_Page_Transition_Optional();
+  const Transition_Navigate = Use_Transition_Navigate();
+  const Destination = Navigate_To ?? Path;
+
   let Button_Customization = null;
   try {
     const UI = Use_UI();
@@ -73,7 +101,16 @@ export const Button: React.FC<Button_Properties> = ({
 
   const { Thema } = Use_App();
 
-  const Active_Theme_Key: Theme_Mode = Thema === "dark" ? "Dark" : "Light";
+  // Volgorde: Theme-prop op de knop, dan "Dark" als de pagina op de blijvende
+  // zwarte laag staat, dan het globale thema.
+  const Active_Theme_Key: Theme_Mode =
+    Theme ??
+    (Transition?.Is_Covered
+      ? "Dark"
+      : Thema === "dark"
+      ? "Dark"
+      : "Light");
+
   const Current_State_Key: Button_State = Is_Pressed
     ? "Active"
     : Is_Hovered
@@ -88,6 +125,39 @@ export const Button: React.FC<Button_Properties> = ({
   const Resolved_Border_Radius = Configuration?.Border_Radius ?? 12;
   const Resolved_Has_Border = Configuration?.Has_Border ?? false;
   const Resolved_Border_Color = Configuration?.Border_Color || "transparent";
+
+  /* -------------------------------------------------------------- */
+  /* Klik: gewoon, of navigeren met transitie                       */
+  /* -------------------------------------------------------------- */
+
+  const Handle_Click = (Event: React.MouseEvent<HTMLDivElement>) => {
+    // Geen bestemming: een gewone knop.
+    if (!Destination) {
+      On_Click?.(Event);
+      return;
+    }
+
+    if (
+      Transition?.Is_Transitioning &&
+      Page_Transition_Settings.Disable_Click_During_Transition
+    ) {
+      return;
+    }
+
+    if (!Destination.startsWith("/")) {
+      console.warn("Ongeldige bestemming voor knop:", Destination);
+      return;
+    }
+
+    On_Click?.(Event);
+
+    Transition_Navigate(
+      Destination,
+      Container_Reference.current,
+      typeof Label === "string" ? Label : "",
+      Transition_Border_Radius ?? Resolved_Border_Radius
+    );
+  };
 
   // --- Fluid / Gooey -------------------------------------------------------
   // Fluid_Wanted: staat het Gooey-effect (filter + canvas-body) aan in de
@@ -275,7 +345,7 @@ export const Button: React.FC<Button_Properties> = ({
           Set_Is_Hovered(false);
           Set_Is_Pressed(false);
         }}
-        onClick={On_Click}
+        onClick={Handle_Click}
       >
         <span
           style={{

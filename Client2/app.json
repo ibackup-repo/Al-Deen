@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Client2",
+    "slug": "Client2",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./Source/Asset/Image/icon.png",
+    "scheme": "client2",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.Client2"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./Source/Asset/Image/android-icon-foreground.png",
+        "backgroundImage": "./Source/Asset/Image/android-icon-background.png",
+        "monochromeImage": "./Source/Asset/Image/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.Client2"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./Source/Asset/Image/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./Source/Asset/Image/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

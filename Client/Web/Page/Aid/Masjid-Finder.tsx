@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import { Layout } from "@Web/Component/Layout/Index";
-import { Container } from "@Web/Component/UI/Container";
 import { Button } from "@Web/Component/UI/Button";
 import { MapPin, Navigation, AlertCircle, ExternalLink } from "lucide-react";
 

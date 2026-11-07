@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "nativewind-preview-to-rc": {
+      "source": "nativewind/nativewind",
+      "sourceType": "github",
+      "skillPath": "skills/nativewind-preview-to-rc/SKILL.md",
+      "computedHash": "507c1ec9ec63a52f3ce4a96b3323d2400c0d0191426675db93ca6970dab6acce"
+    },
+    "nativewind-v4-to-v5": {
+      "source": "nativewind/nativewind",
+      "sourceType": "github",
+      "skillPath": "skills/nativewind-v4-to-v5/SKILL.md",
+      "computedHash": "53b04ba0d7190b56a498c46bd64566d97ce7b7b9f9378bd06ac00c2d49c7f959"
+    }
+  }
+}

@@ -15,12 +15,13 @@ import { Audio_Provider } from "./Context/Audio";
 import { Auth_Provider } from "./Context/Auth";
 import { Admin_Provider } from "./Context/Admin";
 import { NavigationProvider, GlobalNavOverlay } from "./Context/Navigation";
+import { Page_Transition_Provider } from "./Component/UI/Page_Transition/Provider";
 
 // 4. General Components & Layout (Relative Paths)
 import { ErrorBoundary } from "./Component/Error-Boundary";
 import { Visit_Tracker } from "./Component/Admin/Visit-Tracker";
 import { Layout } from "./Component/Layout/Index";
-import Index from "./Page/Index";
+import Root from "./Page/Root";
 
 // 5. Pages - Quran (Relative Paths)
 import Quran        from "./Page/Quran/Index";
@@ -40,24 +41,14 @@ import Chapter      from "./Page/Hadith/Chapter";
 import Narration    from "./Page/Hadith/Narration";
 
 // 7. Pages - Aid & Ummah & AI (Relative Paths)
-import Aid                   from "./Page/Aid/Index";
-import Dua                   from "./Page/Aid/Dua/Index";
-import Dua_Category          from "./Page/Aid/Dua/Category";
+import Aid_Root                   from "./Page/Aid/Root";
 import Prayer_Times          from "./Page/Aid/Prayer-Times";
 import Qibla                 from "./Page/Aid/Qibla";
 import Hijri_Calendar        from "./Page/Aid/Hijri-Calendar";
 import Masjid_Finder         from "./Page/Aid/Masjid-Finder";
 import Ummah                 from "./Page/Ummah/Index";
-import Tasbih                from "./Page/Aid/Tasbih";
+import Aid_Tasbih_Counter                from "./Page/Aid/Tasbih-Counter";
 import AI                    from "./Page/AI/Index";
-import Asma_Ul_Husna         from "./Page/Aid/Asma_Ul_Husna";
-import Namaz                 from "./Page/Aid/Namaz";
-import Prophets              from "./Page/Aid/Prophets/Index";
-import Prophet_Detail        from "./Page/Aid/Prophets/Detail";
-import Pillars               from "./Page/Aid/Pillars/Index";
-import Pillar_Detail         from "./Page/Aid/Pillars/Detail";
-import Articles              from "./Page/Aid/Articles/Index";
-import Article_Detail        from "./Page/Aid/Articles/Detail";
 
 // 8. Pages - Ilm (Chess & Language)
 import Root_Picker           from "./Page/Ilm/Root";
@@ -118,10 +109,13 @@ const App = () => (
                     <Sonner />
                     <Visit_Tracker />
                     <GlobalNavOverlay />
-                    
+
+                    {/* Boven de Routes: elke pagina rendert zelf <Layout> en
+                        remount bij navigatie, de provider moet blijven staan. */}
+                    <Page_Transition_Provider>
                     <Routes>
                       {/* Hoofdpagina / Al-Deen Home */}
-                      <Route path="/" element={<Index />} />
+                      <Route path="/" element={<Root />} />
 
                       {/* Layout-wrapped application paths (zoals Ilm / Chess / Language) */}
                       <Route element={<RouteLayout />}>
@@ -171,24 +165,14 @@ const App = () => (
                       <Route path="/Hadith/:Collection/:Chapter/:HadithId" element={<Narration />} />
 
                       {/* Aid & Ummah & AI */}
-                      <Route path="/Aid" element={<Aid />} />
-                      <Route path="/Aid/Dua" element={<Dua />} />
-                      <Route path="/Aid/Dua/:categoryId" element={<Dua_Category />} />
-                      <Route path="/Aid/Tasbih" element={<Tasbih />} />
+                      <Route path="/Aid" element={<Aid_Root />} />
+                      <Route path="/Aid/Tasbih-Counter" element={<Aid_Tasbih_Counter />} />
                       <Route path="/Aid/Prayers" element={<Prayer_Times />} />
                       <Route path="/Aid/Qibla" element={<Qibla />} />
                       <Route path="/Aid/Hijri-Calendar" element={<Hijri_Calendar />} />
                       <Route path="/Aid/Masjid-Finder" element={<Masjid_Finder />} />
                       <Route path="/Ummah" element={<Ummah />} />
                       <Route path="/AI" element={<AI />} />
-                      <Route path="/Aid/Names" element={<Asma_Ul_Husna />} />
-                      <Route path="/Aid/Namaz" element={<Namaz />} />
-                      <Route path="/Aid/Prophets" element={<Prophets />} />
-                      <Route path="/Aid/Prophets/:name" element={<Prophet_Detail />} />
-                      <Route path="/Aid/Pillars" element={<Pillars />} />
-                      <Route path="/Aid/Pillars/:id" element={<Pillar_Detail />} />
-                      <Route path="/Aid/Articles" element={<Articles />} />
-                      <Route path="/Aid/Articles/:id" element={<Article_Detail />} />
 
                       {/* General */}
                       <Route path="/Feedback" element={<Feedback />} />
@@ -204,6 +188,7 @@ const App = () => (
 
                       <Route path="*" element={<Not_Found />} />
                     </Routes>
+                    </Page_Transition_Provider>
                   </NavigationProvider>
                 </Tooltip_Provider>
               </Audio_Provider>
