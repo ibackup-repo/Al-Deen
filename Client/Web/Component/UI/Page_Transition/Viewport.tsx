@@ -2,6 +2,10 @@ import { useEffect, useState, type ReactNode } from "react";
 import Settings, { Get_End_Rect } from "./Settings";
 import { Use_Page_Transition } from "./Provider";
 
+// Tekent de blijvende zwarte laag onder de paginainhoud. De laag is `fixed`,
+// zodat hij op exact dezelfde plek staat als de overlay op het einde.
+// Op een "covered" pagina krijgt de wrapper de class `dark` en een witte
+// tekstkleur, zodat tekst leesbaar blijft op de zwarte laag.
 export const Page_Transition_Viewport = ({
   children,
   className,
@@ -24,9 +28,14 @@ export const Page_Transition_Viewport = ({
 
   return (
     <div
-      className={className}
+      className={`${className ?? ""} ${Is_Covered ? "dark" : ""}`.trim()}
       data-covered={Is_Covered ? "true" : "false"}
-      style={{ position: "relative" }}
+      style={{
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        color: Is_Covered ? "#ffffff" : undefined,
+      }}
     >
       {Is_Covered && (
         <div
@@ -37,7 +46,7 @@ export const Page_Transition_Viewport = ({
             top: Rect.Y,
             width: Rect.Width,
             height: Rect.Height,
-            borderRadius: Settings.Border_Radius_Min,
+            borderRadius: Settings.Border_Radius_End,
             backgroundColor: Settings.End_Color,
             pointerEvents: "none",
             zIndex: 0,
@@ -45,7 +54,17 @@ export const Page_Transition_Viewport = ({
         />
       )}
 
-      <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 };

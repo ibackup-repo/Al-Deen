@@ -30,8 +30,63 @@ import {
 /* LocalStorage                                               */
 /* ---------------------------------------------------------- */
 
-const BUTTON_STORAGE_KEY = "ui_button_customization";
-const CONTAINER_STORAGE_KEY = "ui_container_customization";
+// Verhoog dit getal zodra de presets of de vorm van de configuratie
+// veranderen. Oude opgeslagen waarden worden dan genegeerd, zodat de
+// presets weer de bron van waarheid zijn.
+const STORAGE_VERSION = 3;
+
+const BUTTON_STORAGE_KEY = `ui_button_customization_v${STORAGE_VERSION}`;
+const CONTAINER_STORAGE_KEY = `ui_container_customization_v${STORAGE_VERSION}`;
+
+// Sleutels van vorige versies: worden bij het laden opgeruimd.
+const LEGACY_STORAGE_KEYS = [
+  "ui_button_customization",
+  "ui_container_customization",
+  "ui_button_customization_v2",
+  "ui_container_customization_v2",
+];
+
+/* ---------------------------------------------------------- */
+/* Deep merge                                                 */
+/* ---------------------------------------------------------- */
+
+const Is_Plain_Object = (
+  Value: unknown
+): Value is Record<string, unknown> =>
+  typeof Value === "object" && Value !== null && !Array.isArray(Value);
+
+// Vult de opgeslagen waarden aan met de preset: ontbrekende of verkeerd
+// getypeerde velden komen uit de preset, onbekende sleutels vallen weg.
+function Deep_Merge<T>(Base: T, Override: unknown): T {
+  if (Is_Plain_Object(Base)) {
+    if (!Is_Plain_Object(Override)) {
+      return Base;
+    }
+
+    const Result: Record<string, unknown> = { ...Base };
+
+    for (const Key of Object.keys(Base)) {
+      Result[Key] = Deep_Merge(
+        (Base as Record<string, unknown>)[Key],
+        Override[Key]
+      );
+    }
+
+    return Result as T;
+  }
+
+  return Override !== undefined && typeof Override === typeof Base
+    ? (Override as T)
+    : Base;
+}
+
+const Load_Saved = <T,>(Key: string, Base: T): T | null => {
+  const Saved = localStorage.getItem(Key);
+
+  if (!Saved) return null;
+
+  return Deep_Merge(Base, JSON.parse(Saved));
+};
 
 /* ---------------------------------------------------------- */
 /* Context Type                                               */
@@ -96,22 +151,27 @@ export const UI: React.FC<{ children: React.ReactNode }> & {
 
   useEffect(() => {
     try {
-      const Saved_Button_Config =
-        localStorage.getItem(BUTTON_STORAGE_KEY);
+      // Oude, niet meer geldige configuraties opruimen.
+      LEGACY_STORAGE_KEYS.forEach((Key) =>
+        localStorage.removeItem(Key)
+      );
+
+      const Saved_Button_Config = Load_Saved(
+        BUTTON_STORAGE_KEY,
+        Default_Button_Configuration
+      );
 
       if (Saved_Button_Config) {
-        Set_Button_Customization(
-          JSON.parse(Saved_Button_Config)
-        );
+        Set_Button_Customization(Saved_Button_Config);
       }
 
-      const Saved_Container_Config =
-        localStorage.getItem(CONTAINER_STORAGE_KEY);
+      const Saved_Container_Config = Load_Saved(
+        CONTAINER_STORAGE_KEY,
+        Default_Container_Configuration
+      );
 
       if (Saved_Container_Config) {
-        Set_Container_Customization(
-          JSON.parse(Saved_Container_Config)
-        );
+        Set_Container_Customization(Saved_Container_Config);
       }
 
     } catch (Error) {

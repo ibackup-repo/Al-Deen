@@ -6,7 +6,14 @@ export const Page_Transition_Settings = {
   Start_Color_On_Dark_Page: "#ffffff",
   End_Color: "#000000",
 
-  Border_Radius_Min: 26,
+  // Radius waarmee de overlay BEGINT (op de knop). Wordt begrensd op de helft
+  // van de kleinste zijde van de knop. Zet op null om de radius van de knop
+  // zelf te gebruiken (Transition_Border_Radius / Button-config).
+  Border_Radius_Start: 9999 as number | null,
+
+  // Radius waarmee de overlay EINDIGT (fullscreen), en van de blijvende
+  // zwarte laag onder de pagina.
+  Border_Radius_End: 26,
 
   Padding_Top: 8,
   Padding_Bottom: 16,

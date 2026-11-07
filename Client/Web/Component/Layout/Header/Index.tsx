@@ -23,7 +23,7 @@ import { Use_Auth } from "@Web/Context/Auth";
 import { Use_Translation } from "@/Hook/Use-Translation";
 import { Use_Is_Mobile } from "@/Hook/Use-Mobile";
 import { Class_Names } from "@/Library/Utility";
-import { Button } from "@Web/Component/UI/Button";
+import { Button } from "@Web/Component/UI/Button/Index";
 import { Input } from "@Web/Component/UI/Input";
 import { Container } from "@Web/Component/UI/Container";
 import { Search_Input } from "../../Search/Input";
@@ -49,6 +49,56 @@ import { Toast } from "@/Hook/Use-Toast";
 interface Header_Properties {
   On_Height_Change?: (height: number) => void;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Header_Button: zelfde als de native header.                                */
+/* Icoon 20px, Height 48, icoonknop 48x48, padding uit de Button-config.      */
+/* -------------------------------------------------------------------------- */
+
+const Header_Button_Height = 48;
+const Header_Button_Width = 48;
+const Header_Icon_Size = 20;
+
+interface Header_Button_Properties {
+  Icon?: React.ReactNode;
+  Label?: string;
+  On_Click?: () => void;
+  // Alleen voor knoppen met tekst; icoonknoppen zijn altijd 48 breed.
+  Width?: number;
+  Title?: string;
+  "aria-label"?: string;
+}
+
+const Header_Button = ({
+  Icon,
+  Label,
+  On_Click,
+  Width = Header_Button_Width,
+  Title,
+  "aria-label": Aria_Label,
+}: Header_Button_Properties) => {
+  const { Thema } = Use_App();
+
+  return (
+    <div
+      className="shrink-0"
+      style={{ width: Label ? Width : Header_Button_Width }}
+      title={Title}
+    >
+      <Button
+        Icon={Icon}
+        Label={Label}
+        On_Click={On_Click}
+        Height={Header_Button_Height}
+        Width={Label ? Width : undefined}
+        // De header staat boven de pagina: altijd het globale thema,
+        // nooit het donkere thema van de zwarte transitielaag.
+        Theme={Thema === "dark" ? "Dark" : "Light"}
+        aria-label={Aria_Label}
+      />
+    </div>
+  );
+};
 
 function Get_Page_Title(pathname: string): string {
   const Segments = pathname.replace(/\/$/, "").split("/").filter(Boolean);
@@ -81,6 +131,7 @@ export const Header = memo(function Header({
   const {
     Is_Settings_Sidebar_Open,
     Set_Settings_Sidebar_Open,
+    Thema,
   } = Use_App();
   const { User } = Use_Auth();
   const { t, Is_RTL } = Use_Translation();
@@ -346,23 +397,38 @@ export const Header = memo(function Header({
     Mobile_Settings_Store.Exit_Search_Mode();
   };
 
+  const Back_Icon = (
+    <ArrowLeft
+      size={Header_Icon_Size}
+      className={Class_Names(Is_RTL && "rotate-180")}
+    />
+  );
+
+  // Donate: midden op de header (>= 450px), anders rechts bij de andere knoppen.
+  const Show_Donate =
+    !Is_Search_Mode &&
+    !Is_Mobile_Settings_Open &&
+    !(Aid_Path && Is_Aid_Open);
+
+  const Donate_Button = (
+    <Header_Button
+      On_Click={() => navigate("/Donate")}
+      aria-label="Donate"
+      Title="Donate"
+      Icon={<Heart size={Header_Icon_Size} />}
+    />
+  );
+
   const Render_Left_Content = () => {
     if (Is_Mobile_Settings_Open) {
       if (Settings_Search_Active) {
         return (
           <>
-            <Button
-              onClick={Exit_Settings_Search}
-              className="w-12 h-12 pt-4 pb-2 px-4"
-              variant="ghost"
-            >
-              <ArrowLeft
-                className={Class_Names(
-                  "h-4 w-4",
-                  Is_RTL && "rotate-180"
-                )}
-              />
-            </Button>
+            <Header_Button
+              On_Click={Exit_Settings_Search}
+              aria-label="Back"
+              Icon={Back_Icon}
+            />
 
             <div className="flex-1 min-w-0">
               <Input
@@ -381,24 +447,24 @@ export const Header = memo(function Header({
 
       return (
         <>
-          <Button
-            onClick={Handle_Back}
-            className="w-12 h-12 pt-4 pb-2 px-4"
-            variant="ghost"
-          >
-            {Mobile_Settings.Show_Back_Button ? (
-              <ArrowLeft
-                className={Class_Names(
-                  "h-4 w-4",
-                  Is_RTL && "rotate-180"
-                )}
-              />
-            ) : (
-              <X className="h-4 w-4" />
-            )}
-          </Button>
+          <Header_Button
+            On_Click={Handle_Back}
+            aria-label={
+              Mobile_Settings.Show_Back_Button ? "Back" : "Close"
+            }
+            Icon={
+              Mobile_Settings.Show_Back_Button ? (
+                Back_Icon
+              ) : (
+                <X size={Header_Icon_Size} />
+              )
+            }
+          />
 
-          <Container className="!py-1 !px-3 inline-flex w-auto max-w-[70%]">
+          <Container
+            Theme={Thema === "dark" ? "Dark" : "Light"}
+            className="!py-1 !px-3 inline-flex w-auto max-w-[70%]"
+          >
             <span className="text-sm font-medium truncate">
               {Mobile_Settings.title}
             </span>
@@ -410,13 +476,11 @@ export const Header = memo(function Header({
     if (!Show_Back_Button) {
       if (!Is_Home && !Is_Search_Mode) {
         return (
-          <Button
-            onClick={() => navigate("/")}
-            className="w-12 h-12 pt-4 pb-2 px-4"
-            variant="ghost"
-          >
-            <Home className="h-4 w-4" />
-          </Button>
+          <Header_Button
+            On_Click={() => navigate("/")}
+            aria-label="Home"
+            Icon={<Home size={Header_Icon_Size} />}
+          />
         );
       }
 
@@ -426,18 +490,11 @@ export const Header = memo(function Header({
     return (
       <>
         {!(Aid_Path && Is_Mobile && Is_Aid_Open) && (
-          <Button
-            onClick={Handle_Back}
-            className="w-12 h-12 pt-4 pb-2 px-4 shrink-0"
-            variant="ghost"
-          >
-            <ArrowLeft
-              className={Class_Names(
-                "h-4 w-4",
-                Is_RTL && "rotate-180"
-              )}
-            />
-          </Button>
+          <Header_Button
+            On_Click={Handle_Back}
+            aria-label="Back"
+            Icon={Back_Icon}
+          />
         )}
 
         {!Is_Search_Mode &&
@@ -450,12 +507,10 @@ export const Header = memo(function Header({
           ) : Hadith_Path ? (
             <Hadith_Navigator />
           ) : (
-            <Button
-              variant="ghost"
-              className="text-sm font-medium truncate max-w-[150px] sm:max-w-[250px] pt-4 pb-2 px-4 h-12"
-            >
-              {Get_Page_Title(Location_Data.pathname)}
-            </Button>
+            <Header_Button
+              Label={Get_Page_Title(Location_Data.pathname)}
+              Width={Is_Mobile ? 160 : 200}
+            />
           ))}
       </>
     );
@@ -468,10 +523,9 @@ export const Header = memo(function Header({
     <header
       ref={Header_Ref}
       className={Class_Names(
-        "fixed top-0 z-50 transition-all duration-300 flex justify-between items-start pt-1 sm:pt-2 isolate",
-        Aid_Path && Is_Aid_Open
-          ? "max-sm:left-0 max-sm:right-0 max-sm:pt-0 left-2 right-2 sm:left-4 sm:right-4"
-          : "left-2 right-2 sm:left-4 sm:right-4",
+        // Zelfde als native: px-4 pt-4 pb-2 (72px hoog met een knop van 48px).
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 flex justify-between items-center px-4 pt-4 pb-2 isolate",
+        Aid_Path && Is_Aid_Open && "max-sm:px-0 max-sm:pt-0 max-sm:pb-0",
         Should_Hide &&
           !Is_Settings_Sidebar_Open &&
           !Is_Mobile_Settings_Open &&
@@ -481,44 +535,32 @@ export const Header = memo(function Header({
       )}
       dir={Is_RTL ? "rtl" : "ltr"}
     >
-      {/* Layout Wrapper Column: Uses flex layout rules so that when left content expands,
-          it safely scales, and natively forces the inline layout neighbor (Donate)
-          to step rightwards instead of stacking/overlapping.
-      */}
+      {/* Midden: Donate, exact in het midden van de header (>= 450px). */}
+      {Show_Donate && (
+        <div className="hidden min-[450px]:flex absolute inset-0 items-center justify-center pointer-events-none z-20">
+          <div className="pointer-events-auto">{Donate_Button}</div>
+        </div>
+      )}
+
+      {/* Links: terug / navigator */}
       <div
         className={Class_Names(
-          "flex items-center min-w-0 flex-1",
+          "relative z-10 flex items-center min-w-0 flex-1",
           Aid_Path && Is_Aid_Open
             ? "max-sm:gap-0 max-sm:h-auto"
-            : "gap-2 h-8 sm:h-9"
+            : "gap-2 h-12"
         )}
       >
         {Render_Left_Content()}
-
-        {/* Dynamic auto-adjust Donate layout wrapper */}
-        {!Is_Search_Mode &&
-          !Is_Mobile_Settings_Open &&
-          !(Aid_Path && Is_Aid_Open) && (
-            <div className="h-8 sm:h-9 flex items-center shrink-0 ml-auto pl-2 sm:pl-0 sm:absolute sm:left-1/2 sm:-translate-x-1/2 sm:ml-4 transition-all duration-200">
-              <Button
-                onClick={() => navigate("/Donate")}
-                className="w-12 h-12 pt-4 pb-2 px-4"
-                variant="ghost"
-                aria-label="Donate"
-                title="Donate"
-              >
-                <Heart className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
       </div>
 
-      <div className="flex items-start gap-1 sm:gap-2 shrink-0 ml-2">
+      {/* Rechts: Search, Settings, Sign In (+ Donate als het scherm smal is) */}
+      <div className="relative z-10 flex items-center gap-2 shrink-0 ml-2">
         {Is_Search_Mode && !Is_Mobile_Settings_Open ? (
           <div
             ref={Search_Container_Ref}
             className={Class_Names(
-              "transition-all duration-300 ease-out mr-1 sm:mr-2",
+              "transition-all duration-300 ease-out",
               Is_Mobile
                 ? "w-[calc(100vw-96px)]"
                 : "w-[340px]"
@@ -542,37 +584,34 @@ export const Header = memo(function Header({
           </div>
         ) : (
           !(Aid_Path && Is_Aid_Open) && (
-            <div className="flex items-center gap-1 sm:gap-2 h-8 sm:h-9">
+            <div className="flex items-center gap-2 h-12">
+              {Show_Donate && (
+                <div className="min-[450px]:hidden">{Donate_Button}</div>
+              )}
+
               {!(Is_Mobile_Settings_Open && Settings_Search_Active) && (
-                <Button
-                  onClick={Handle_Search_Click}
-                  className="w-12 h-12 pt-4 pb-2 px-4"
-                  variant="ghost"
-                >
-                  <Search className="h-4 w-4" />
-                </Button>
+                <Header_Button
+                  On_Click={Handle_Search_Click}
+                  aria-label="Search"
+                  Icon={<Search size={Header_Icon_Size} />}
+                />
               )}
 
               {!Hide_Right_Settings_Buttons && (
                 <>
-                  <Button
-                    onClick={() => Set_Settings_Sidebar_Open(true)}
-                    className="w-12 h-12 pt-4 pb-2 px-4"
-                    variant="ghost"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
+                  <Header_Button
+                    On_Click={() => Set_Settings_Sidebar_Open(true)}
+                    aria-label="Settings"
+                    Icon={<Settings size={Header_Icon_Size} />}
+                  />
 
                   {!User && (
-                    <Button
-                      onClick={() => navigate("/Sign-In")}
-                      className="w-12 h-12 pt-4 pb-2 px-4"
-                      variant="ghost"
+                    <Header_Button
+                      On_Click={() => navigate("/Sign-In")}
                       aria-label="Sign In"
-                      title="Sign In"
-                    >
-                      <LogIn className="h-4 w-4" />
-                    </Button>
+                      Title="Sign In"
+                      Icon={<LogIn size={Header_Icon_Size} />}
+                    />
                   )}
                 </>
               )}

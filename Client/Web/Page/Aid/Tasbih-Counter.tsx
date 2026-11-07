@@ -45,39 +45,11 @@ const Use_Window_Size = () => {
     return Size;
 };
 
-const Use_Is_Dark = () => {
-    const Get_Is_Dark = () =>
-        typeof document !== "undefined" &&
-        document.documentElement.classList.contains("dark");
-
-    const [Is_Dark, Set_Is_Dark] = useState(Get_Is_Dark);
-
-    useEffect(() => {
-        const Observer = new MutationObserver(() =>
-            Set_Is_Dark(Get_Is_Dark())
-        );
-
-        Observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ["class"],
-        });
-
-        return () => Observer.disconnect();
-    }, []);
-
-    return Is_Dark;
-};
-
 const Aid_Tasbih_Counter = () => {
     const { Width: Screen_Width, Height: Screen_Height } = Use_Window_Size();
 
     // Op gsm staat de vingerafdruk onderaan, binnen bereik van de duim.
     const Is_Mobile = Screen_Width < 768;
-
-    const Is_Dark = Use_Is_Dark();
-
-    const Action_Button_Color = Is_Dark ? "#FFFFFF" : "#222222";
-    const Action_Icon_Color = Is_Dark ? "#111111" : "#FFFFFF";
 
     /* -------------------------------------------------------------- */
     /* Responsive maten                                               */
@@ -240,8 +212,8 @@ const Aid_Tasbih_Counter = () => {
 
     /* -------------------------------------------------------------- */
     /* Render                                                         */
-    /* Kleuren volgen de dark-modus van Tailwind. Waarden die         */
-    /* meeschalen met het scherm staan in style.                      */
+    /* Kleuren volgen de semantische theme-tokens van de applicatie. */
+    /* Waarden die meeschalen met het scherm staan in style.          */
     /* -------------------------------------------------------------- */
 
     const Counter_Text_Style: React.CSSProperties = {
@@ -252,8 +224,8 @@ const Aid_Tasbih_Counter = () => {
     };
 
     return (
+<UI>
         <Layout>
-            <UI>
                 <div
                     className="w-full max-w-[448px] mx-auto flex flex-col items-center px-4 pt-6 pb-8"
                     style={{
@@ -282,9 +254,9 @@ const Aid_Tasbih_Counter = () => {
                                 }}
                             >
                                 <div className="min-h-[22px] flex flex-row items-center justify-center gap-[7px]">
-                                    <Repeat size={16} color="#FFFFFF" />
+                                    <Repeat size={16}  />
 
-                                    <span className="text-white text-sm font-bold tabular-nums">
+                                    <span className="text-sm font-bold tabular-nums">
                                         {Loops}
                                     </span>
                                 </div>
@@ -301,12 +273,10 @@ const Aid_Tasbih_Counter = () => {
                                         <Button
                                             Variant="Primary"
                                             Size="icon"
-                                            Color={Action_Button_Color}
-                                            Icon={
+                                               Icon={
                                                 <Check
                                                     size={19}
-                                                    color={Action_Icon_Color}
-                                                />
+                                                   />
                                             }
                                             On_Click={Save_Target}
                                             Active={true}
@@ -321,12 +291,10 @@ const Aid_Tasbih_Counter = () => {
                                         <Button
                                             Variant="Primary"
                                             Size="icon"
-                                            Color={Action_Button_Color}
-                                            Icon={
+                                               Icon={
                                                 <Edit2
                                                     size={18}
-                                                    color={Action_Icon_Color}
-                                                />
+                                                   />
                                             }
                                             On_Click={Start_Editing_Target}
                                             aria-label="Doel aanpassen"
@@ -340,11 +308,9 @@ const Aid_Tasbih_Counter = () => {
                                     <Button
                                         Variant="Primary"
                                         Size="icon"
-                                        Color={Action_Button_Color}
                                         Icon={
                                             <RotateCcw
                                                 size={18}
-                                                color={Action_Icon_Color}
                                             />
                                         }
                                         On_Click={Reset_Counter}
@@ -367,14 +333,14 @@ const Aid_Tasbih_Counter = () => {
                             <div className="flex flex-row items-center justify-center">
 
                                 <span
-                                    className="font-extrabold text-[#111111] dark:text-white"
+                                    className="font-extrabold"
                                     style={Counter_Text_Style}
                                 >
                                     {Count}
                                 </span>
 
                                 <span
-                                    className="text-[#CCCCCC] dark:text-[#666666]"
+
                                     style={{
                                         fontSize: Counter_Font * 0.8,
                                         lineHeight: 1.15,
@@ -411,7 +377,7 @@ const Aid_Tasbih_Counter = () => {
                                         }
                                         maxLength={3}
                                         autoFocus
-                                        className="font-extrabold p-0 m-0 border-0 bg-transparent outline-none text-center text-[#111111] dark:text-white"
+                                        className="font-extrabold p-0 m-0 border-0 bg-transparent outline-none text-center"
                                         style={{
                                             ...Counter_Text_Style,
                                             width: `${Math.max(
@@ -424,7 +390,7 @@ const Aid_Tasbih_Counter = () => {
                                     />
                                 ) : (
                                     <span
-                                        className="font-extrabold text-[#111111] dark:text-white"
+                                        className="font-extrabold"
                                         style={Counter_Text_Style}
                                     >
                                         {Target}
@@ -481,7 +447,7 @@ const Aid_Tasbih_Counter = () => {
                                 <Fingerprint
                                     size={Icon_Size}
                                     strokeWidth={1.5}
-                                    className="text-[#888888] dark:text-[#555555]"
+                                    style={{ opacity: 0.3 }}
                                 />
 
                                 <div
@@ -501,7 +467,7 @@ const Aid_Tasbih_Counter = () => {
                                         <Fingerprint
                                             size={Icon_Size}
                                             strokeWidth={1.5}
-                                            className="text-[#111111] dark:text-white"
+                                            style={{ opacity: 1 }}
                                         />
                                     </div>
                                 </div>
@@ -530,7 +496,7 @@ const Aid_Tasbih_Counter = () => {
                                         strokeWidth="2"
                                         fill="transparent"
                                         stroke="currentColor"
-                                        className="text-[#DDDDDD] dark:text-[#333333]"
+
                                     />
 
                                     <circle
@@ -540,7 +506,7 @@ const Aid_Tasbih_Counter = () => {
                                         strokeWidth="4"
                                         fill="transparent"
                                         stroke="currentColor"
-                                        className="text-[#222222] dark:text-white"
+
                                         strokeDasharray={CIRCLE_CIRCUMFERENCE}
                                         strokeDashoffset={
                                             CIRCLE_CIRCUMFERENCE -
@@ -557,8 +523,8 @@ const Aid_Tasbih_Counter = () => {
                     </div>
 
                 </div>
+             </Layout>
             </UI>
-        </Layout>
     );
 };
 

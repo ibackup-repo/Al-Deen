@@ -4,8 +4,8 @@ export const Default_Button_Configuration: Button_Configuration_Map = {
   Light: {
     Primary: {
       Default: {
-        BG_Color: "#ffffff",
-        Text_Color: "#0f172a",
+        BG_Color: "#000000",
+        Text_Color: "#ffffff",
         Border_Radius: 28,
         Has_Border: false,
         Border_Color: "transparent",
@@ -25,8 +25,8 @@ export const Default_Button_Configuration: Button_Configuration_Map = {
         Margin: { Top: 0, Right: 0, Bottom: 0, Left: 0 },
       },
       Hover: {
-        BG_Color: "#ffffff",
-        Text_Color: "#0f172a",
+        BG_Color: "#000000",
+        Text_Color: "#ffffff",
         Border_Radius: 28,
         Has_Border: false,
         Border_Color: "transparent",
@@ -58,8 +58,8 @@ export const Default_Button_Configuration: Button_Configuration_Map = {
         Margin: { Top: 0, Right: 0, Bottom: 0, Left: 0 },
       },
       Active: {
-        BG_Color: "#ffffff",
-        Text_Color: "#0f172a",
+        BG_Color: "#000000",
+        Text_Color: "#ffffff",
         Border_Radius: 28,
         Has_Border: false,
         Border_Color: "transparent",
@@ -90,8 +90,8 @@ export const Default_Button_Configuration: Button_Configuration_Map = {
     },
     Secondary: {
       Default: {
-        BG_Color: "#f1f5f9",
-        Text_Color: "#0f172a",
+        BG_Color: "#000000",
+        Text_Color: "#ffffff",
         Border_Radius: 12,
         Has_Border: false,
         Border_Color: "#e2e8f0",
@@ -110,8 +110,8 @@ export const Default_Button_Configuration: Button_Configuration_Map = {
         Margin: { Top: 0, Right: 0, Bottom: 0, Left: 0 },
       },
       Hover: {
-        BG_Color: "#e2e8f0",
-        Text_Color: "#0f172a",
+        BG_Color: "#000000",
+        Text_Color: "#ffffff",
         Border_Radius: 12,
         Has_Border: false,
         Border_Color: "#cbd5e1",

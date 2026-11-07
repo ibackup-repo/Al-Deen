@@ -34,6 +34,10 @@ export interface Button_Properties {
   // Overschrijft het thema voor alleen deze knop.
   Theme?: Theme_Mode;
 
+  // true: de knop toont de hover-staat (incl. fluid-effect) zonder dat er
+  // gehoverd wordt, bijv. de edit-knop terwijl er bewerkt wordt.
+  Active?: boolean;
+
   Color?: string;
   Text_Color?: string;
   Size?: "default" | "icon" | "sm" | "lg";
@@ -54,6 +58,11 @@ const Default_Fluid: Gooey_Configuration =
 // gaat het Fluid-effect na deze tijd (ms) alsnog uit.
 const FLUID_FALLBACK_TIMEOUT = 1500;
 
+// Het gooey-filter (blur + contrast-drempel) laat kleine ronde vormen krimpen
+// met ongeveer Blur² / (2 × straal). Voor icon-only knoppen begrenzen we de
+// blur, zodat de vorm bij hover op maat blijft.
+const GOOEY_MAX_BLUR_FOR_ICON = 5;
+
 export const Button: React.FC<Button_Properties> = ({
   Label,
   Icon,
@@ -65,6 +74,7 @@ export const Button: React.FC<Button_Properties> = ({
   Width,
   Variant = "Primary",
   Theme,
+  Active = false,
   Color,
   Text_Color,
   Size = "default",
@@ -78,8 +88,10 @@ export const Button: React.FC<Button_Properties> = ({
   const [Is_Fluid_Active, Set_Is_Fluid_Active] = useState(false);
   const [Measured_Width, Set_Measured_Width] = useState<number>(Width || 180);
   const Container_Reference = useRef<HTMLDivElement>(null);
+  // Hover-staat: echte hover OF de Active-prop.
+  const Is_Visually_Active = Active || Is_Hovered;
   const Is_Hovered_Reference = useRef(false);
-  Is_Hovered_Reference.current = Is_Hovered;
+  Is_Hovered_Reference.current = Is_Visually_Active;
   const Last_Fluid_Configuration_Reference = useRef<Gooey_Configuration | null>(null);
 
   const Filter_Identifier = useId().replace(/:/g, "");
@@ -113,7 +125,7 @@ export const Button: React.FC<Button_Properties> = ({
 
   const Current_State_Key: Button_State = Is_Pressed
     ? "Active"
-    : Is_Hovered
+    : Is_Visually_Active
     ? "Hover"
     : "Default";
 
@@ -174,7 +186,7 @@ export const Button: React.FC<Button_Properties> = ({
   // Zodra het effect gewenst is én de knop gehoverd wordt: body zichtbaar maken.
   // (setState tijdens render is toegestaan voor de eigen component; React
   // rendert meteen opnieuw, vóór de commit, dus zonder tussenframe.)
-  if (Fluid_Wanted && Is_Hovered && !Is_Fluid_Active) {
+  if (Fluid_Wanted && Is_Visually_Active && !Is_Fluid_Active) {
     Set_Is_Fluid_Active(true);
   }
 
@@ -194,14 +206,14 @@ export const Button: React.FC<Button_Properties> = ({
 
   // Vangnet voor het geval On_Settled nooit komt.
   useEffect(() => {
-    if (!Is_Hovered && Is_Fluid_Active) {
+    if (!Is_Visually_Active && Is_Fluid_Active) {
       const Timeout_Identifier = setTimeout(
         () => Set_Is_Fluid_Active(false),
         FLUID_FALLBACK_TIMEOUT
       );
       return () => clearTimeout(Timeout_Identifier);
     }
-  }, [Is_Hovered, Is_Fluid_Active]);
+  }, [Is_Visually_Active, Is_Fluid_Active]);
 
   // Achtergrond is alleen transparant zolang de Fluid-body zelf tekent.
   const Body_Is_Drawn = Is_Fluid_Active && Fluid_Configuration_Data.Draw_Body;
@@ -226,7 +238,12 @@ export const Button: React.FC<Button_Properties> = ({
   const Is_Icon_Only = Size === "icon" || (!Label && !!Icon);
   const Actual_Height =
     Size === "sm" ? 32 : Size === "lg" ? 48 : Size === "icon" ? 48 : Height;
-  const Actual_Width = Is_Icon_Only ? Actual_Height : Width;
+  const Actual_Width = Is_Icon_Only ? (Width ?? Actual_Height) : Width;
+
+  // Blur voor het gooey-filter: voor icon-only knoppen begrensd (zie boven).
+  const Filter_Blur = Is_Icon_Only
+    ? Math.min(Fluid_Configuration_Data.Blur, GOOEY_MAX_BLUR_FOR_ICON)
+    : Fluid_Configuration_Data.Blur;
 
   const Padding_Key = `${Padding.Top}-${Padding.Right}-${Padding.Bottom}-${Padding.Left}`;
   useEffect(() => {
@@ -257,7 +274,7 @@ export const Button: React.FC<Button_Properties> = ({
             >
               <feGaussianBlur
                 in="SourceGraphic"
-                stdDeviation={Fluid_Configuration_Data.Blur}
+                stdDeviation={Filter_Blur}
                 result="blur"
               />
               <feColorMatrix
@@ -284,7 +301,7 @@ export const Button: React.FC<Button_Properties> = ({
           }}
         >
           <Fluid
-            Is_Hovered={Is_Hovered}
+            Is_Hovered={Is_Visually_Active}
             Is_Pressed={Is_Pressed}
             Width={Actual_Width || Measured_Width}
             Height={Actual_Height}

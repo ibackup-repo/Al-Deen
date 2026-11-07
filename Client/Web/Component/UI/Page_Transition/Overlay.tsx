@@ -73,8 +73,10 @@ export const Page_Transition_Overlay = ({
     const Text = Label_Ref.current;
     if (!Box || !Text) return;
 
+    // Begin-radius: uit Settings (of de radius van de knop), begrensd op
+    // de helft van de kleinste zijde zodat een kleine knop een cirkel blijft.
     const Start_Radius = Math.min(
-      Origin.Border_Radius,
+      Settings.Border_Radius_Start ?? Origin.Border_Radius,
       Origin.Width / 2,
       Origin.Height / 2
     );
@@ -82,7 +84,7 @@ export const Page_Transition_Overlay = ({
     const Start = To_Style(Origin, Start_Radius, Start_Color);
     const End = To_Style(
       Get_End_Rect(),
-      Settings.Border_Radius_Min,
+      Settings.Border_Radius_End,
       Settings.End_Color
     );
 

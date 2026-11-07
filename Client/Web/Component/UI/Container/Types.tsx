@@ -1,5 +1,7 @@
 import React from "react";
 
+export type Container_Theme_Mode = "Light" | "Dark";
+
 export type Container_Variant = "Primary" | "Secondary";
 
 export type Container_Preset_Name = "Default";
@@ -27,15 +29,20 @@ export interface Container_Configuration {
   Has_Border: boolean;
 }
 
-export type Container_Configuration_Map = Record<
-  Container_Variant,
-  Container_Configuration
->;
+// Zelfde opbouw als Button_Configuration_Map: Theme -> Variant -> configuratie.
+export type Container_Configuration_Map = {
+  [Theme in Container_Theme_Mode]: {
+    [Variant in Container_Variant]: Container_Configuration;
+  };
+};
 
 export interface Container_Properties {
   children?: React.ReactNode;
 
   Variant?: Container_Variant;
+
+  // Overschrijft het thema voor alleen deze container.
+  Theme?: Container_Theme_Mode;
 
   Width?: React.CSSProperties["width"];
   Height?: React.CSSProperties["height"];

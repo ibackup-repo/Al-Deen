@@ -38,7 +38,7 @@ const Root = () => {
     <UI>
       <Layout>
         <div
-          className="w-full px-4 py-2"
+          className="w-full"
           dir={Is_RTL ? "rtl" : "ltr"}
         >
           <div className="flex flex-col gap-4 w-full">
